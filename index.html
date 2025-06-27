@@ -459,11 +459,16 @@
                     .filter(person => !followers.has(person.usernameLower))
                     .map(person => person.username);
                 
+                // Calculate mutual followers
+                const mutualCount = following.filter(person => followers.has(person.usernameLower)).length;
+                
                 // Debug info
                 console.log('Followers format:', followersData);
                 console.log('Following format:', followingData);
                 console.log('Total followers found:', followers.size);
                 console.log('Total following found:', following.length);
+                console.log('Sample followers:', Array.from(followers).slice(0, 5));
+                console.log('Sample following:', following.slice(0, 5));
                 
                 // Show format info
                 if (followers.size === 0 || following.length === 0) {
