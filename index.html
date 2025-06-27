@@ -388,40 +388,87 @@
 
         function analyzeData() {
             try {
-                // Extract usernames from followers
+                // Extract usernames from followers - checking multiple possible formats
                 const followers = new Set();
+                
+                // Format 1: Direct array
                 if (followersData && Array.isArray(followersData)) {
                     followersData.forEach(item => {
                         if (item.string_list_data && Array.isArray(item.string_list_data)) {
                             item.string_list_data.forEach(follower => {
                                 if (follower.value) {
-                                    followers.add(follower.value);
+                                    followers.add(follower.value.toLowerCase());
+                                }
+                            });
+                        }
+                    });
+                }
+                
+                // Format 2: Nested in relationships_followers
+                if (followersData && followersData.relationships_followers && 
+                    Array.isArray(followersData.relationships_followers)) {
+                    followersData.relationships_followers.forEach(item => {
+                        if (item.string_list_data && Array.isArray(item.string_list_data)) {
+                            item.string_list_data.forEach(follower => {
+                                if (follower.value) {
+                                    followers.add(follower.value.toLowerCase());
                                 }
                             });
                         }
                     });
                 }
 
-                // Extract usernames from following
+                // Extract usernames from following - checking multiple possible formats
                 const following = [];
+                
+                // Format 1: Nested in relationships_following
                 if (followingData && followingData.relationships_following && 
                     Array.isArray(followingData.relationships_following)) {
                     followingData.relationships_following.forEach(item => {
                         if (item.string_list_data && Array.isArray(item.string_list_data)) {
                             item.string_list_data.forEach(person => {
                                 if (person.value) {
-                                    following.push(person.value);
+                                    following.push({
+                                        username: person.value,
+                                        usernameLower: person.value.toLowerCase()
+                                    });
+                                }
+                            });
+                        }
+                    });
+                }
+                
+                // Format 2: Direct array
+                if (following.length === 0 && followingData && Array.isArray(followingData)) {
+                    followingData.forEach(item => {
+                        if (item.string_list_data && Array.isArray(item.string_list_data)) {
+                            item.string_list_data.forEach(person => {
+                                if (person.value) {
+                                    following.push({
+                                        username: person.value,
+                                        usernameLower: person.value.toLowerCase()
+                                    });
                                 }
                             });
                         }
                     });
                 }
 
-                // Find non-followers
-                nonFollowersList = following.filter(username => !followers.has(username));
+                // Find non-followers (case-insensitive comparison)
+                nonFollowersList = following
+                    .filter(person => !followers.has(person.usernameLower))
+                    .map(person => person.username);
                 
-                // Calculate mutual followers
-                const mutualCount = following.filter(username => followers.has(username)).length;
+                // Debug info
+                console.log('Followers format:', followersData);
+                console.log('Following format:', followingData);
+                console.log('Total followers found:', followers.size);
+                console.log('Total following found:', following.length);
+                
+                // Show format info
+                if (followers.size === 0 || following.length === 0) {
+                    showError('Warning: Could not properly read the data. Please make sure you uploaded the correct files. Check browser console for details.');
+                }
 
                 // Update stats
                 document.getElementById('totalFollowers').textContent = followers.size;
